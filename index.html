@@ -84,6 +84,18 @@
           </div>
         </section>
         <div class="autosave-note"><span>◈</span> 軍情已自動保存於本機 <button id="reset-game" class="text-button">重置遊戲紀錄</button></div>
+        <section class="chat-panel panel" aria-labelledby="chat-title">
+          <div class="panel-heading"><div><span class="section-kicker">REAL-TIME LOBBY</span><h2 id="chat-title">群雄聊天室</h2></div><span id="chat-status" class="chat-status" role="status">連線準備中</span></div>
+          <p class="chat-intro">與其他玩家即時交流。訊息會公開顯示，請勿分享個人資料。</p>
+          <div id="chat-messages" class="chat-messages" role="log" aria-live="polite" aria-relevant="additions text"></div>
+          <form id="chat-form" class="chat-form">
+            <label for="chat-name">聊天暱稱</label>
+            <input id="chat-name" class="chat-name" type="text" maxlength="12" autocomplete="nickname" placeholder="輸入暱稱">
+            <label for="chat-message">訊息</label>
+            <div class="chat-compose"><textarea id="chat-message" maxlength="120" rows="2" placeholder="最多 120 字" required></textarea><button class="officer-action" id="chat-send" type="submit">傳送</button></div>
+            <small class="chat-help">每 3 秒可傳送一則，請友善交流。</small>
+          </form>
+        </section>
       </aside>
     </main>
   </div>
@@ -96,5 +108,6 @@
   </div>
   <div class="toast" id="toast" role="status"></div>
   <script src="game.js"></script>
+  <script type="module" src="chat.js"></script>
 </body>
 </html>
