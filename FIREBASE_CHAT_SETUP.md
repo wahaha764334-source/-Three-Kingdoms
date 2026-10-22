@@ -14,17 +14,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAnonymous() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
     match /publicChat/{messageId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null
+      allow read: if isAnonymous();
+      allow create: if isAnonymous()
         && request.resource.data.keys().hasAll(['uid', 'name', 'text', 'createdAt'])
         && request.resource.data.keys().hasOnly(['uid', 'name', 'text', 'createdAt'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() > 0
         && request.resource.data.name.size() <= 12
         && request.resource.data.text is string
-        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 120
         && request.resource.data.createdAt == request.time;
       allow update, delete: if false;
@@ -39,9 +44,10 @@ service cloud.firestore {
 
 把 `index.html`、`game.js`、`style.css`、`chat.js`、`firebase-config.js` 更新到 GitHub 儲存庫根目錄。重新部署完成後，重新整理遊戲即可測試聊天室。
 
-## 使用與維護
+## 費用與使用限制
 
 - 所有人都能讀取聊天室；只有已匿名登入的玩家能新增訊息，不能修改或刪除已送出的訊息。
 - 畫面只顯示最近 50 則訊息；暱稱保存在玩家自己的瀏覽器中。
 - 網頁端每 3 秒限制送出一次，且字數限制為 120 字。這是基本防洗版措施，不是伺服器端的完整速率限制；公開聊天室仍可能遭遇垃圾訊息。
-- Firestore 使用量超出免費方案額度時，Google 可能依方案收費；請在 Firebase Console 設定預算／用量警示並定期檢查用量。
+- 本遊戲聊天室只使用 Firebase Spark 免費方案，不要連結帳單帳戶或升級至付費方案。Spark 方案不會自動向你收費；若用量超過免費額度，聊天室功能可能暫時受到限制或停止，等待額度重置即可。
+- 不要啟用需要升級方案的 Firebase 產品、備份或付費用量；只要保持 Spark 方案即可。

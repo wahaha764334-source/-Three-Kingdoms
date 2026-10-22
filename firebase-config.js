@@ -1,6 +1,6 @@
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAKEXn2nhIHL9SklIWEhnS8_YPRXq87jaY",
+  authDomain: "three-kingdoms-cb0dc.firebaseapp.com",
+  projectId: "three-kingdoms-cb0dc",
+  appId: "1:231372474325:web:d5338beb2f5a75c8a55f5c"
 };

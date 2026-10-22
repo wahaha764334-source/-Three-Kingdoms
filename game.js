@@ -105,7 +105,7 @@ const regions = [
 
 const defaultState = {
   hero: null, level: 1, xp: 0, points: 0, stats: { strength: 10, agility: 10, intelligence: 10, vitality: 10 },
-  gold: 120, merit: 0, wave: 1, kills: 0, defeated: 0, region: "黃巾賊營", enemyHp: 0, lastSeen: Date.now(),
+  gold: 120, merit: 0, wave: 1, kills: 0, defeated: 0, region: "黃巾賊營", enemyHp: 0, heroHp: null, superiorHp: null, lastSeen: Date.now(),
   officers: [], troops: [], items: [], superiorLevels: {}, equippedWeapon: null, equippedArmor: null, equippedStrategistWeapon: null, equippedStrategistArmor: null, equippedMount: null, rebirths: 0, rank: 0, sound: false
 };
 const ranks = [
@@ -138,9 +138,14 @@ function loadGame() {
       ...structuredClone(defaultState), ...parsed,
       stats: { ...defaultState.stats, ...(parsed.stats || {}) },
       officers: Array.isArray(parsed.officers) ? parsed.officers : [],
-      troops: Array.isArray(parsed.troops) ? parsed.troops : [],
+      troops: Array.isArray(parsed.troops) ? parsed.troops.filter((troop) => troop && typeof troop === "object").map((troop) => ({
+        ...troop,
+        currentHp: Number.isFinite(troop.currentHp) ? Math.max(0, troop.currentHp) : null
+      })) : [],
       items: Array.isArray(parsed.items) ? parsed.items : [],
       superiorLevels: parsed.superiorLevels && typeof parsed.superiorLevels === "object" ? parsed.superiorLevels : {},
+      heroHp: Number.isFinite(parsed.heroHp) ? Math.max(0, parsed.heroHp) : null,
+      superiorHp: Number.isFinite(parsed.superiorHp) ? Math.max(0, parsed.superiorHp) : null,
       rebirths: Math.max(0, Number(parsed.rebirths) || 0),
       rank: Math.max(0, Math.min(ranks.length - 1, Math.floor(Number(parsed.rank) || 0)))
     };
@@ -186,7 +191,20 @@ const superiorAttackBonus = () => {
 };
 const effectiveAttack = () => state.stats[isStrategist() ? "intelligence" : "strength"] + weaponBonus() + mountBonus() + (ranks[state.rank]?.bonus || 0) + superiorAttackBonus();
 const maxHp = () => 300 + state.stats.vitality * 50 + armorBonus() + mountHpBonus();
+const superiorMaxHp = () => 300 + (officerData[getSuperior()]?.[5] || 1) * 50 + (getSuperiorLevel() - 1) * 25;
 const maxMp = () => 200 + state.stats.vitality * 50;
+function restorePartyHealth() {
+  state.heroHp = maxHp();
+  state.superiorHp = superiorMaxHp();
+  state.troops.forEach((troop) => { troop.currentHp = troop.hp; });
+}
+function normalizePartyHealth() {
+  state.heroHp = Number.isFinite(state.heroHp) ? Math.max(0, Math.min(maxHp(), state.heroHp)) : maxHp();
+  state.superiorHp = Number.isFinite(state.superiorHp) ? Math.max(0, Math.min(superiorMaxHp(), state.superiorHp)) : superiorMaxHp();
+  state.troops.forEach((troop) => {
+    troop.currentHp = Number.isFinite(troop.currentHp) ? Math.max(0, Math.min(troop.hp, troop.currentHp)) : troop.hp;
+  });
+}
 const xpNeeded = () => 100 + state.level * 100 + state.level ** 2 * 5;
 const enemyMaxHp = () => {
   const recommendedLevel = regions.find(([name]) => name === state.region)?.[1] || 1;
@@ -194,6 +212,7 @@ const enemyMaxHp = () => {
   return Math.round((30 + recommendedLevel * 12 + recommendedLevel ** 2 * .15) * waveMultiplier);
 };
 if (!Number.isFinite(state.enemyHp) || state.enemyHp <= 0) state.enemyHp = enemyMaxHp();
+normalizePartyHealth();
 const getFaction = () => state.hero ? factions[state.hero.faction] : null;
 const getRole = () => state.hero?.role === "general" ? "武將" : "軍師";
 const getInitial = (name) => [...(name || "俠")[0]][0];
@@ -250,10 +269,10 @@ function render() {
   document.getElementById("xp-fill").style.width = `${progress}%`;
   document.getElementById("xp-label").textContent = state.level >= 200 ? "已滿級 · 可轉生" : `${state.xp} / ${xpNeeded()}`;
   document.getElementById("attack-value").textContent = effectiveAttack();
-  document.getElementById("hp-value").textContent = hp.toLocaleString();
-  document.getElementById("profile-hp").textContent = `${hp.toLocaleString()} / ${hp.toLocaleString()}`;
+  document.getElementById("hp-value").textContent = `${state.heroHp.toLocaleString()} / ${hp.toLocaleString()}`;
+  document.getElementById("profile-hp").textContent = `${state.heroHp.toLocaleString()} / ${hp.toLocaleString()}`;
   document.getElementById("profile-mp").textContent = `${mp.toLocaleString()} / ${mp.toLocaleString()}`;
-  document.getElementById("hp-fill").style.width = "100%";
+  document.getElementById("hp-fill").style.width = `${Math.max(0, state.heroHp / hp * 100)}%`;
   document.getElementById("mp-fill").style.width = "100%";
   document.getElementById("points-value").textContent = `${state.points} 點`;
   document.getElementById("allocate-button").classList.toggle("has-points", state.points > 0);
@@ -271,10 +290,18 @@ function render() {
   document.getElementById("roster-list").innerHTML = allies.length ? allies.map((name) => `<div class="roster-entry"><div class="roster-face">${portraitMarkup(name, "general")}</div><div class="roster-copy"><strong>${escapeHtml(name)}</strong><small>${officerData[name][0]} · ${escapeHtml(officerData[name][1])}</small></div><span class="roster-badge">Lv.${getSuperiorLevel()}</span></div>`).join("") : `<div class="roster-entry"><div class="roster-face">＋</div><div class="roster-copy"><strong>選擇效忠主將</strong><small>加入一方陣營，與主將並肩征戰</small></div></div>`;
   const remainingEnemies = Math.max(0, 5 - (state.kills % 5));
   document.getElementById("battle-units").innerHTML = [
-    ...(state.hero ? [{ name: state.hero.name, type: "hero", gender: heroGender }, ...allies.map((name) => ({ name, type: "general" })), ...state.troops.map((troop) => ({ name: troop.name, type: "troop" }))] : []),
+    ...(state.hero ? [
+      { name: state.hero.name, type: "hero", gender: heroGender, currentHp: state.heroHp, maxHp: hp },
+      ...allies.map((name) => ({ name, type: "general", currentHp: state.superiorHp, maxHp: superiorMaxHp() })),
+      ...state.troops.map((troop, index) => ({ name: troop.name, type: "troop", index, currentHp: troop.currentHp, maxHp: troop.hp }))
+    ] : []),
     ...Array.from({ length: remainingEnemies }, (_, index) => ({ name: enemies[(state.wave + index - 1) % enemies.length], type: "enemy", index }))
   ].slice(0, 10).map((unit) => {
-    if (unit.type !== "enemy") return `<div class="battle-unit ally" data-unit="${unit.type}"><div class="unit-portrait">${portraitMarkup(unit.name, unit.type, unit.gender)}</div><span class="unit-name">${escapeHtml(unit.name)}</span><div class="unit-shadow"></div></div>`;
+    if (unit.type !== "enemy") {
+      const hpPercent = Math.max(0, Math.min(100, unit.currentHp / unit.maxHp * 100));
+      const down = unit.currentHp <= 0;
+      return `<div class="battle-unit ally${down ? " defeated" : ""}" data-unit="${unit.type}"><div class="unit-portrait">${portraitMarkup(unit.name, unit.type, unit.gender)}</div><span class="unit-name">${escapeHtml(unit.name)}</span><div class="unit-hp"><span style="width:${hpPercent}%"></span></div><span class="unit-hp-label">${down ? "倒下" : `${unit.currentHp.toLocaleString()} / ${unit.maxHp.toLocaleString()}`}</span><div class="unit-shadow"></div></div>`;
+    }
     const maxHp = enemyMaxHp();
     const currentHp = unit.index === 0 ? state.enemyHp : maxHp;
     const hpPercent = Math.max(0, Math.min(100, currentHp / maxHp * 100));
@@ -296,6 +323,43 @@ function renderLog() {
   el.innerHTML = battleLog.slice(0, 16).map((entry) => `<div class="log-entry"><time>${entry.time}</time><span class="${entry.tone}">${entry.message}</span></div>`).join("") || '<div class="log-entry"><time>待命</time><span>軍情戰報將記錄征戰詳情。</span></div>';
 }
 
+function enemyAttack() {
+  const party = [
+    { name: state.hero.name, get hp() { return state.heroHp; }, set hp(value) { state.heroHp = value; }, maxHp: maxHp() },
+    { name: getSuperior(), get hp() { return state.superiorHp; }, set hp(value) { state.superiorHp = value; }, maxHp: superiorMaxHp() },
+    ...state.troops.map((troop) => ({ name: troop.name, get hp() { return troop.currentHp; }, set hp(value) { troop.currentHp = value; }, maxHp: troop.hp }))
+  ].filter((unit) => unit.hp > 0);
+  if (!party.length) return false;
+
+  const target = party[Math.floor(Math.random() * party.length)];
+  const recommendedLevel = regions.find(([name]) => name === state.region)?.[1] || 1;
+  const damage = Math.max(1, Math.round(recommendedLevel * 1.25 + Math.min(state.wave, 20) * 2 + Math.random() * 3));
+  target.hp = Math.max(0, target.hp - damage);
+  addLog(`<b>${escapeHtml(enemies[(state.wave - 1) % enemies.length])}</b>反擊我軍，對<b>${escapeHtml(target.name)}</b>造成 ${damage} 點傷害（剩餘 ${target.hp.toLocaleString()} / ${target.maxHp.toLocaleString()}）。`);
+
+  const partyDefeated = state.heroHp <= 0 && state.superiorHp <= 0 && state.troops.every((troop) => troop.currentHp <= 0);
+  if (partyDefeated) {
+    const currentRegionIndex = regions.findIndex(([name]) => name === state.region);
+    let retryLabel = `重新挑戰${state.region}第一隊`;
+    if (state.wave > 1) {
+      state.wave -= 1;
+      state.kills = (state.wave - 1) * 5;
+      retryLabel = `退回${state.region}第 ${state.wave} 隊`;
+    } else if (currentRegionIndex > 0) {
+      state.region = regions[currentRegionIndex - 1][0];
+      state.wave = 1;
+      state.kills = 0;
+      retryLabel = `退回${state.region}`;
+    }
+    state.enemyHp = enemyMaxHp();
+    restorePartyHealth();
+    addLog(`<b>全軍敗退！</b>${retryLabel}重新挑戰，並恢復全軍氣血。`, "log-highlight");
+    showToast(`戰敗！${retryLabel}，全軍氣血回滿。`);
+    return true;
+  }
+  return false;
+}
+
 function advanceBattle() {
   if (!state.hero) return;
   const target = document.querySelector(".enemy");
@@ -307,6 +371,7 @@ function advanceBattle() {
   const enemyName = target.querySelector(".unit-name").textContent;
   playHit();
   state.enemyHp = Math.max(0, state.enemyHp - value);
+  let waveCleared = false;
   if (state.enemyHp > 0) {
     addLog(`我軍攻擊<b>${escapeHtml(enemyName)}</b>，造成 <span class="log-highlight">${value} 點傷害</span>（剩餘 ${state.enemyHp.toLocaleString()} / ${enemyMaxHp().toLocaleString()}）。`);
   } else {
@@ -318,10 +383,13 @@ function advanceBattle() {
     addLog(`我軍擊敗<b>${escapeHtml(enemyName)}</b>，${exp ? `獲得 <span class="log-highlight">${exp} 點經驗</span>與銅錢。` : "已達 Lv.200，未取得經驗；可前往轉生。"} `);
     if (state.kills % 5 === 0) {
       state.wave += 1;
-      addLog(`<b>敵軍全數擊退！</b>第 ${state.wave - 1} 隊伏兵已清，下一隊敵軍現身。`, "log-highlight");
+      restorePartyHealth();
+      waveCleared = true;
+      addLog(`<b>敵軍全數擊退！</b>第 ${state.wave - 1} 隊伏兵已清，下一隊敵軍現身；全軍氣血回滿。`, "log-highlight");
     }
     state.enemyHp = enemyMaxHp();
   }
+  if (!waveCleared) enemyAttack();
   while (state.level < 200 && state.xp >= xpNeeded()) {
     state.xp -= xpNeeded();
     state.level += 1;
@@ -403,6 +471,7 @@ function renderCreation(host) {
     state.rebirths = 0;
     state.hero = { name, gender: host.querySelector('[data-choice-group="gender"].selected')?.dataset.choice || "female", role: host.querySelector('[data-choice-group="role"].selected')?.dataset.choice || "general", faction: factionSelect.value, superior: superiorSelect.value };
     state.superiorLevels[state.hero.superior] ||= 1;
+    restorePartyHealth();
     addLog(`<b>${escapeHtml(name)}</b>投靠${state.hero.superior}，加入${factions[state.hero.faction].name}軍。`, "log-highlight");
     render();
     saveGame();
@@ -440,7 +509,7 @@ function rankContent() {
 }
 function troopsContent() {
   const pills = getItemCount("evolution-pill");
-  return `<div class="points-banner">目前配置士兵 ${state.troops.length} 名（上限 5）。士兵進階需購買精製進化丹，目前持有 ${pills} 枚。</div><div class="unit-list">${state.troops.map((troop, index) => `<div class="unit-card"><span class="officer-avatar">${portraitMarkup(troop.name, "troop")}</span><div class="officer-copy"><strong>${troop.name} · 進階 ${troop.level}</strong><small>攻擊 +${troop.atk} · 氣血 +${troop.hp}</small></div><button class="officer-action" data-evolve="${index}" ${pills === 0 ? "disabled" : ""}>${pills ? "使用進化丹" : "需進化丹"}</button></div>`).join("")}</div>${state.troops.length === 0 ? '<div class="empty-state" style="margin-bottom:9px">軍中尚無士兵。於商店招募基礎兵種，再購買精製進化丹進階。</div>' : ""}<button class="modal-secondary" data-tab="store">前往商店招募兵種／購買進化道具</button><p class="modal-note">最多配置 5 名士兵；士兵進化每階提升 2 攻擊與 15 氣血。</p>`;
+  return `<div class="points-banner">目前配置士兵 ${state.troops.length} 名（上限 5）。士兵進階需購買精製進化丹，目前持有 ${pills} 枚。</div><div class="unit-list">${state.troops.map((troop, index) => `<div class="unit-card"><span class="officer-avatar">${portraitMarkup(troop.name, "troop")}</span><div class="officer-copy"><strong>${troop.name} · 進階 ${troop.level}</strong><small>攻擊 +${troop.atk} · 氣血 ${troop.currentHp}/${troop.hp}</small></div><button class="officer-action" data-evolve="${index}" ${pills === 0 ? "disabled" : ""}>${pills ? "使用進化丹" : "需進化丹"}</button><button class="officer-action troop-dismiss" data-dismiss-troop="${index}">脫離</button></div>`).join("")}</div>${state.troops.length === 0 ? '<div class="empty-state" style="margin-bottom:9px">軍中尚無士兵。於商店招募基礎兵種，再購買精製進化丹進階。</div>' : ""}<button class="modal-secondary" data-tab="store">前往商店招募兵種／購買進化道具</button><p class="modal-note">最多配置 5 名士兵；士兵進化每階提升 2 攻擊與 15 氣血。</p>`;
 }
 function storeContent() {
   const gear = equipmentStock;
@@ -616,8 +685,17 @@ document.addEventListener("click", (event) => {
     if (state.troops.length >= 5) { showToast("兵種編制已滿，最多配置 5 名士兵。"); return; }
     if (state.gold < cost) { showToast("銅錢不足，無法徵募。"); return; }
     state.gold -= cost;
-    state.troops.push({ ...troop, level: 1 });
+    state.troops.push({ ...troop, level: 1, currentHp: troop.hp });
     addLog(`徵募一名<b>${troop.name}</b>加入軍陣。`, "log-highlight");
+    render(); saveGame(); renderModal(); return;
+  }
+  if (target.dataset.dismissTroop !== undefined) {
+    const index = Number(target.dataset.dismissTroop);
+    const troop = state.troops[index];
+    if (!troop) { showToast("找不到要解散的士兵，請重新整理編制。"); return; }
+    if (!window.confirm(`確定解散${troop.name}？解散後不會退還徵募費用。`)) return;
+    state.troops.splice(index, 1);
+    addLog(`你解散了<b>${troop.name}</b>。`, "log-highlight");
     render(); saveGame(); renderModal(); return;
   }
   if (target.dataset.evolve !== undefined) {
@@ -626,7 +704,7 @@ document.addEventListener("click", (event) => {
     if (!state.troops[index]) { showToast("找不到要進階的士兵，請重新整理編制。"); return; }
     if (pillIndex < 0) { showToast("缺少精製士兵進化丹，請前往商店購買。"); return; }
     state.items.splice(pillIndex, 1);
-    state.troops[index].level += 1; state.troops[index].atk += 2; state.troops[index].hp += 15;
+    state.troops[index].level += 1; state.troops[index].atk += 2; state.troops[index].hp += 15; state.troops[index].currentHp += 15;
     addLog(`<b>${state.troops[index].name}</b>進化至第 ${state.troops[index].level} 階。`, "log-highlight");
     render(); saveGame(); renderModal(); return;
   }
@@ -662,6 +740,7 @@ document.addEventListener("click", (event) => {
     if (state.level < Number(target.dataset.level)) { showToast("主將等級不足，暫時無法前往此地。"); return; }
     state.region = region; state.wave = 1; state.kills = 0;
     state.enemyHp = enemyMaxHp();
+    restorePartyHealth();
     addLog(`全軍開拔，前往<b>${region}</b>。`, "log-highlight");
     render(); saveGame(); renderModal(); return;
   }
