@@ -1,4 +1,4 @@
-import { firebaseConfig } from "./firebase-config.js?v=20261023";
+import { firebaseConfig } from "./firebase-config.js?v=20261023b";
 
 const chatForm = document.getElementById("chat-form");
 const chatNameInput = document.getElementById("chat-name");
@@ -76,7 +76,7 @@ function cleanName(value) {
 }
 
 function cleanMessage(value) {
-  return Array.from(value.replace(/\r?\n/g, " ").trim()).slice(0, maxMessageLength).join("");
+  return Array.from(value.replace(/\r\n?/g, "\n").trim()).slice(0, maxMessageLength).join("");
 }
 
 function initializeUnconfiguredChat() {
@@ -176,6 +176,12 @@ async function initializeChat() {
         setChatStatus("傳送失敗，請稍後重試", "error");
       } finally {
         chatSendButton.disabled = false;
+      }
+    });
+    chatMessageInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        chatForm.requestSubmit();
       }
     });
   } catch (error) {

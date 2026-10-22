@@ -79,3 +79,4 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #battlefield[data-terrain="city"],#battlefield[data-terrain="fortress"] { background:linear-gradient(180deg,#30343a 0%,#50514d 48%,#625a4b 72%,#292925 100%); }
 #battlefield[data-terrain="city"] .mountain,#battlefield[data-terrain="fortress"] .mountain { border-bottom-color:rgba(45,45,43,.7); }
 @media (max-width:440px) { .faction-choice-grid { grid-template-columns:repeat(2,1fr); } .superior-upgrade { align-items:flex-start; flex-direction:column; } .superior-upgrade .officer-action { width:100%; } }
+.battle-controls { display:flex; align-items:center; gap:7px; }.speed-button { padding:8px 10px; background:rgba(196,163,96,.1); border:1px solid rgba(196,163,96,.3); color:#e2c786; font-size:10px; white-space:nowrap; }

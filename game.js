@@ -105,7 +105,7 @@ const regions = [
 
 const defaultState = {
   hero: null, level: 1, xp: 0, points: 0, stats: { strength: 10, agility: 10, intelligence: 10, vitality: 10 },
-  gold: 120, merit: 0, wave: 1, kills: 0, defeated: 0, region: "黃巾賊營", enemyHp: 0, heroHp: null, superiorHp: null, lastSeen: Date.now(),
+  gold: 120, merit: 0, wave: 1, kills: 0, defeated: 0, region: "黃巾賊營", enemyHp: 0, heroHp: null, superiorHp: null, speedMultiplier: 5, lastSeen: Date.now(),
   officers: [], troops: [], items: [], superiorLevels: {}, equippedWeapon: null, equippedArmor: null, equippedStrategistWeapon: null, equippedStrategistArmor: null, equippedMount: null, rebirths: 0, rank: 0, sound: false
 };
 const ranks = [
@@ -146,6 +146,7 @@ function loadGame() {
       superiorLevels: parsed.superiorLevels && typeof parsed.superiorLevels === "object" ? parsed.superiorLevels : {},
       heroHp: Number.isFinite(parsed.heroHp) ? Math.max(0, parsed.heroHp) : null,
       superiorHp: Number.isFinite(parsed.superiorHp) ? Math.max(0, parsed.superiorHp) : null,
+      speedMultiplier: Number(parsed.speedMultiplier) === 1 ? 1 : 5,
       rebirths: Math.max(0, Number(parsed.rebirths) || 0),
       rank: Math.max(0, Math.min(ranks.length - 1, Math.floor(Number(parsed.rank) || 0)))
     };
@@ -172,6 +173,19 @@ function saveGame() {
     console.error("無法儲存遊戲進度：", error);
     showToast("存檔失敗，請檢查瀏覽器儲存空間");
   }
+}
+
+function updateSpeedButton() {
+  const button = document.getElementById("speed-button");
+  if (!button) return;
+  button.textContent = `${state.speedMultiplier}× 速度`;
+  button.setAttribute("aria-pressed", String(state.speedMultiplier === 5));
+  button.title = state.speedMultiplier === 5 ? "點擊切換為 1 倍速" : "點擊切換為 5 倍速";
+}
+
+function startBattleTimer() {
+  clearInterval(combatTimer);
+  if (state.hero) combatTimer = setInterval(advanceBattle, 1900 / state.speedMultiplier);
 }
 
 const isStrategist = () => state.hero?.role === "strategist";
@@ -288,6 +302,7 @@ function render() {
   document.getElementById("battlefield").dataset.terrain = region[3];
   document.getElementById("battlefield").dataset.faction = state.hero?.faction || "";
   document.getElementById("sound-button").classList.toggle("sound-on", state.sound);
+  updateSpeedButton();
   document.getElementById("roster-list").innerHTML = allies.length ? allies.map((name) => `<div class="roster-entry"><div class="roster-face">${portraitMarkup(name, "general")}</div><div class="roster-copy"><strong>${escapeHtml(name)}</strong><small>${officerData[name][0]} · ${escapeHtml(officerData[name][1])}</small></div><span class="roster-badge">Lv.${getSuperiorLevel()}</span></div>`).join("") : `<div class="roster-entry"><div class="roster-face">＋</div><div class="roster-copy"><strong>選擇效忠主將</strong><small>加入一方陣營，與主將並肩征戰</small></div></div>`;
   const remainingEnemies = Math.max(0, 5 - (state.kills % 5));
   document.getElementById("battle-units").innerHTML = [
@@ -477,7 +492,7 @@ function renderCreation(host) {
     render();
     saveGame();
     closeModal();
-    combatTimer = setInterval(advanceBattle, 1900);
+    startBattleTimer();
     showToast(`${name}，你已投靠${state.hero.superior}！`);
   });
 }
@@ -760,6 +775,13 @@ document.getElementById("sound-button").addEventListener("click", () => {
   saveGame();
   showToast(state.sound ? "已開啟原創戰鬥音效（非遊戲原曲）。" : "已關閉戰鬥音效。");
 });
+document.getElementById("speed-button").addEventListener("click", () => {
+  state.speedMultiplier = state.speedMultiplier === 5 ? 1 : 5;
+  startBattleTimer();
+  updateSpeedButton();
+  saveGame();
+  showToast(`已切換為 ${state.speedMultiplier} 倍速。`);
+});
 
 render();
 if (state.hero) {
@@ -785,7 +807,7 @@ if (state.hero) {
     saveGame();
   }
   render();
-  combatTimer = setInterval(advanceBattle, 1900);
+  startBattleTimer();
 } else {
   openModal();
   addLog("將軍，請建立角色並選擇效忠勢力。");

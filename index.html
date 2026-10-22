@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261023b">
 </head>
 <body>
   <div class="app-shell">
@@ -30,7 +30,7 @@
       <section class="battle-column">
         <div class="battle-header">
           <div><div class="eyebrow"><span class="live-dot"></span> 自動征戰中</div><h1 id="battle-title">黃巾賊營 <span>·</span> <small>第 <b id="wave-value">1</b> 隊</small></h1></div>
-          <button class="zone-button" data-action="map">更換征戰地 <span>⌄</span></button>
+          <div class="battle-controls"><button class="speed-button" id="speed-button" type="button" aria-label="切換戰鬥速度">5× 速度</button><button class="zone-button" data-action="map">更換征戰地 <span>⌄</span></button></div>
         </div>
         <div class="battlefield" id="battlefield">
           <div class="scene-mist mist-one"></div><div class="scene-mist mist-two"></div>
@@ -93,7 +93,7 @@
             <input id="chat-name" class="chat-name" type="text" maxlength="12" autocomplete="nickname" placeholder="輸入暱稱">
             <label for="chat-message">訊息</label>
             <div class="chat-compose"><textarea id="chat-message" maxlength="120" rows="2" placeholder="最多 120 字" required></textarea><button class="officer-action" id="chat-send" type="submit">傳送</button></div>
-            <small class="chat-help">每 3 秒可傳送一則，請友善交流。</small>
+            <small class="chat-help">按 Enter 或「傳送」發送；Shift + Enter 換行。每 3 秒可傳送一則，請友善交流。</small>
           </form>
         </section>
       </aside>
@@ -107,7 +107,7 @@
     </section>
   </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="game.js"></script>
-  <script type="module" src="chat.js?v=20261023"></script>
+  <script src="game.js?v=20261023b"></script>
+  <script type="module" src="chat.js?v=20261023b"></script>
 </body>
 </html>
