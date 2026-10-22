@@ -240,6 +240,7 @@ function portraitMarkup(name, role = "general", gender = "male") {
 }
 
 function render() {
+  normalizePartyHealth();
   const faction = getFaction();
   const heroName = state.hero?.name || "尚未建立角色";
   const role = state.hero ? getRole() : "—";
@@ -620,6 +621,7 @@ document.addEventListener("click", (event) => {
     state.hero.faction = factionKey;
     state.hero.superior = factions[factionKey].leaders[0];
     state.superiorLevels[state.hero.superior] ||= 1;
+    state.superiorHp = superiorMaxHp();
     addLog(`你改投${factions[factionKey].name}，加入${state.hero.superior}麾下。`, "log-highlight");
     render(); saveGame(); renderModal(); return;
   }
@@ -628,6 +630,7 @@ document.addEventListener("click", (event) => {
     if (!getFaction()?.leaders.includes(name)) return;
     state.hero.superior = name;
     state.superiorLevels[name] ||= 1;
+    state.superiorHp = superiorMaxHp();
     addLog(`你改投<b>${name}</b>麾下，繼續並肩征戰。`, "log-highlight");
     render(); saveGame(); renderModal(); return;
   }
