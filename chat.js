@@ -1,4 +1,4 @@
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig } from "./firebase-config.js?v=20261023";
 
 const chatForm = document.getElementById("chat-form");
 const chatNameInput = document.getElementById("chat-name");
