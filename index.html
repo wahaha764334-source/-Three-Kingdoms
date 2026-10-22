@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101310">
+  <meta name="description" content="群雄逐鹿：一款三國題材的放置戰鬥網頁遊戲">
+  <title>群雄逐鹿｜三國放置行記</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700;800&family=Noto+Serif+TC:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="群雄逐鹿首頁">
+        <span class="brand-mark">群</span>
+        <span class="brand-type"><strong>群雄逐鹿</strong><small>THREE KINGDOMS · IDLE CHRONICLE</small></span>
+      </a>
+      <div class="top-center"><span class="season-dot"></span> 天下一統 · 建安十三年　<span class="top-divider">/</span>　<span id="top-location">黃巾賊營</span></div>
+      <div class="resources">
+        <div class="resource"><span class="resource-icon gold">◇</span><span><small>銅錢</small><strong id="gold-value">120</strong></span><button class="plus-btn" data-action="store">＋</button></div>
+        <div class="resource"><span class="resource-icon jade">✦</span><span><small>戰功</small><strong id="merit-value">0</strong></span></div>
+        <button class="sound-button" id="sound-button" aria-label="切換音效" title="原創環境音">♫</button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="battle-column">
+        <div class="battle-header">
+          <div><div class="eyebrow"><span class="live-dot"></span> 自動征戰中</div><h1 id="battle-title">黃巾賊營 <span>·</span> <small>第 <b id="wave-value">1</b> 隊</small></h1></div>
+          <button class="zone-button" data-action="map">更換征戰地 <span>⌄</span></button>
+        </div>
+        <div class="battlefield" id="battlefield">
+          <div class="scene-mist mist-one"></div><div class="scene-mist mist-two"></div>
+          <div class="scene-sun"></div>
+          <div class="mountain mountain-back"></div><div class="mountain mountain-front"></div>
+          <div class="battle-banner"><span class="banner-symbol" id="banner-symbol">魏</span><span id="banner-text">討伐黃巾 · 征戰獲得 5–15 經驗</span></div>
+          <div class="battle-units" id="battle-units"></div>
+          <div class="battle-ground"></div>
+          <div class="battle-stage-footer"><span>我方軍勢 <b id="army-count">1</b> 人</span><span class="stage-separator">·</span><span>敵軍 <b id="enemy-count">5</b> 人</span><span class="stage-spacer"></span><span class="battle-status"><i></i> <span id="status-label">交鋒中</span></span></div>
+        </div>
+
+        <div class="battle-stats">
+          <div class="commander-card">
+            <div class="avatar commander-avatar" id="commander-avatar">女</div>
+            <div class="commander-info"><div class="commander-name-line"><strong id="commander-name">尚未建立角色</strong><span class="rank-chip" id="rank-label">布衣</span></div><small><span id="faction-label">—</span> · <span id="class-label">—</span>　 Lv.<b id="level-value">1</b></small><div class="xp-track"><span id="xp-fill" style="width:0%"></span></div></div>
+            <div class="xp-label"><strong id="xp-label">0 / 50</strong><small>經驗</small></div>
+          </div>
+          <div class="combat-readout"><span class="sword-icon">⚔</span><span><strong id="attack-value">10</strong><small>攻擊</small></span><span class="readout-separator"></span><span><strong id="hp-value">500</strong><small>氣血</small></span></div>
+        </div>
+
+        <section class="log-panel">
+          <div class="log-header"><div><span class="log-icon">▤</span><strong>軍情戰報</strong><small>COMBAT LOG</small></div><button id="clear-log" class="text-button">清除紀錄</button></div>
+          <div id="battle-log" class="battle-log" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <aside class="side-column">
+        <section class="profile-panel panel">
+          <div class="panel-heading"><div><span class="section-kicker">YOUR COMMAND</span><h2>主將資訊</h2></div><button class="icon-button" data-action="details" aria-label="人物詳細">↗</button></div>
+          <div class="profile-identity"><div class="avatar profile-avatar" id="profile-avatar">女</div><div><strong id="profile-name">新任主將</strong><small><span class="faction-dot"></span><span id="profile-faction">尚未選擇勢力</span></small></div><span class="level-seal">Lv.<b id="profile-level">1</b></span></div>
+          <div class="profile-bars"><div class="bar-label"><span>氣血</span><b id="profile-hp">500 / 500</b></div><div class="meter"><span id="hp-fill" class="hp-fill" style="width:100%"></span></div><div class="bar-label mana-label"><span>內力</span><b id="profile-mp">300 / 300</b></div><div class="meter"><span id="mp-fill" class="mp-fill" style="width:100%"></span></div></div>
+          <button id="allocate-button" class="allocate-button" data-action="details">分配屬性點 <span id="points-value">0 點</span><span>→</span></button>
+        </section>
+
+        <section class="roster-panel panel">
+          <div class="panel-heading roster-heading"><div><span class="section-kicker">YOUR COMMANDER</span><h2>所屬主將 <small id="retinue-count">尚未選擇</small></h2></div><button class="text-button recruit-button" data-action="roster">更換主將 <span>↗</span></button></div>
+          <div class="retinue-summary"><span>主將等級 <b id="superior-level">1</b><i>/ 20</i></span><span class="summary-separator"></span><span>升級道具 <b id="superior-items">0</b></span></div>
+          <div class="roster-list" id="roster-list"></div>
+          <button class="view-roster-button" data-action="roster">更換效忠主將 <span>→</span></button>
+        </section>
+
+        <section class="quick-menu panel">
+          <div class="panel-heading"><div><span class="section-kicker">CAMP &amp; ARMORY</span><h2>軍營政務</h2></div><span class="quiet-note">備戰整軍</span></div>
+          <div class="menu-grid">
+            <button class="menu-tile" data-action="equipment"><span class="menu-symbol symbol-gold">⚔</span><span><strong>武器／防具／馬匹</strong><small>戰具與坐騎</small></span><span class="tile-arrow">→</span></button>
+            <button class="menu-tile" data-action="details"><span class="menu-symbol symbol-blue">▤</span><span><strong>人物詳細</strong><small>屬性與成長</small></span><span class="tile-arrow">→</span></button>
+            <button class="menu-tile" data-action="rank"><span class="menu-symbol symbol-red">♜</span><span><strong>官階晉升</strong><small>提升全軍能力</small></span><span class="tile-arrow">→</span></button>
+            <button class="menu-tile" data-action="troops"><span class="menu-symbol symbol-green">⚑</span><span><strong>兵種訓練</strong><small>進化與編制</small></span><span class="tile-arrow">→</span></button>
+            <button class="menu-tile" data-action="store"><span class="menu-symbol symbol-purple">◇</span><span><strong>軍需商店</strong><small>武器與補給</small></span><span class="tile-arrow">→</span></button>
+            <button class="menu-tile" data-action="map"><span class="menu-symbol symbol-cream">⌖</span><span><strong>行軍地圖</strong><small>逐鹿中原</small></span><span class="tile-arrow">→</span></button>
+          </div>
+        </section>
+        <div class="autosave-note"><span>◈</span> 軍情已自動保存於本機 <button id="reset-game" class="text-button">重置遊戲紀錄</button></div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="modal-backdrop">
+    <section class="game-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-topline"><span class="section-kicker">THREE KINGDOMS · IDLE CHRONICLE</span><button class="modal-close" id="modal-close" aria-label="關閉">×</button></div>
+      <div id="modal-content"></div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="game.js"></script>
+</body>
+</html>
